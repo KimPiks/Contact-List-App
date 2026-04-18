@@ -1,0 +1,7 @@
+﻿services:
+  netpc.api:
+    image: netpc.api
+    build:
+      context: .
+      dockerfile: NetPC.Api/Dockerfile
+
