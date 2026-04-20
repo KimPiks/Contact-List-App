@@ -10,11 +10,11 @@ public static class IdentityModelBuilderExtensions
 {
     public static void IgnoreUnusedIdentityTables(this ModelBuilder builder)
     {
-        builder.Ignore<IdentityUserClaim<string>>();
-        builder.Ignore<IdentityUserLogin<string>>();
-        builder.Ignore<IdentityUserToken<string>>();
+        builder.Ignore<IdentityUserClaim<Guid>>();
+        builder.Ignore<IdentityUserLogin<Guid>>();
+        builder.Ignore<IdentityUserToken<Guid>>();
         builder.Ignore<IdentityRole>();
-        builder.Ignore<IdentityUserRole<string>>();
-        builder.Ignore<IdentityRoleClaim<string>>();
+        builder.Ignore<IdentityUserRole<Guid>>();
+        builder.Ignore<IdentityRoleClaim<Guid>>();
     }
 }

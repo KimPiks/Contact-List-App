@@ -49,6 +49,11 @@
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      JWT__Secret: ${JWT_SECRET_KEY}
+      JWT__Issuer: ${JWT_ISSUER}
+      JWT__Audience: ${JWT_AUDIENCE}
+      JWT__AccessTokenExpirationMinutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES}
+      JWT__RefreshTokenExpirationDays: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${ASPNETCORE_HTTP_PORTS}/health > /dev/null"]
       interval: 10s

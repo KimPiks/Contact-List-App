@@ -17,5 +17,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Ignore(u => u.LockoutEnabled);
         builder.Ignore(u => u.LockoutEnd);
         builder.Ignore(u => u.AccessFailedCount);
+        
+        builder.HasMany(u => u.RefreshTokens)
+            .WithOne(rt => rt.User)
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
