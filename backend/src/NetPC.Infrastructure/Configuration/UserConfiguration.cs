@@ -11,6 +11,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
+        // Ignore unused Identity fields
         builder.Ignore(u => u.PhoneNumber);
         builder.Ignore(u => u.PhoneNumberConfirmed);
         builder.Ignore(u => u.TwoFactorEnabled);
@@ -18,6 +19,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Ignore(u => u.LockoutEnd);
         builder.Ignore(u => u.AccessFailedCount);
         
+        // Define relationships between tables
         builder.HasMany(u => u.RefreshTokens)
             .WithOne(rt => rt.User)
             .HasForeignKey(rt => rt.UserId)

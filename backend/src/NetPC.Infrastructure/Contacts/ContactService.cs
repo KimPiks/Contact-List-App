@@ -1,156 +1,162 @@
-using Microsoft.EntityFrameworkCore;
 using NetPC.Application.Contacts;
 using NetPC.Application.DTOs.Contacts;
+using NetPC.Application.Encryption;
 using NetPC.Domain.Contact;
 
 namespace NetPC.Infrastructure.Contacts;
 
+/// <summary>
+/// Service for managing contacts, including CRUD operations and password handling.
+/// </summary>
 public class ContactService : IContactService
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IContactRepository _repository;
+    private readonly IEncryptionService _encryption;
 
-    public ContactService(AppDbContext dbContext)
+    public ContactService(IContactRepository repository, IEncryptionService encryption)
     {
-        _dbContext = dbContext;
+        _repository = repository;
+        _encryption = encryption;
     }
 
     public async Task<IReadOnlyCollection<ContactDto>> GetAllAsync()
     {
-        var contacts = await _dbContext.Contacts
-            .AsNoTracking()
-            .Include(contact => contact.Category)
-            .Include(contact => contact.Subcategory)
-            .ToListAsync();
+        var contacts = await _repository.GetAllAsync();
 
-        return contacts.Select(Map)
-            .OrderBy(contact => contact.LastName)
-            .ThenBy(contact => contact.FirstName)
+        return contacts.Select(ToDto)
+            .OrderBy(c => c.LastName)
+            .ThenBy(c => c.FirstName)
             .ToList();
     }
 
     public async Task<ContactDto?> GetByIdAsync(Guid id)
     {
-        var contact = await _dbContext.Contacts
-            .AsNoTracking()
-            .Include(item => item.Category)
-            .Include(item => item.Subcategory)
-            .FirstOrDefaultAsync(contact => contact.Id == id);
-
-        return contact is null ? null : Map(contact);
+        var contact = await _repository.GetByIdAsync(id);
+        return contact is null ? null : ToDto(contact);
     }
 
     public async Task<IReadOnlyCollection<CategoryDto>> GetCategoriesAsync()
     {
-        return await _dbContext.ContactCategories
-            .AsNoTracking()
-            .OrderBy(category => category.Name)
-            .Select(category => new CategoryDto
-            {
-                Id = category.Id,
-                Name = category.Name
-            })
-            .ToListAsync();
+        var categories = await _repository.GetAllCategoriesAsync();
+        return categories.Select(c => new CategoryDto { Id = c.Id, Name = c.Name }).ToList();
     }
 
     public async Task<IReadOnlyCollection<SubcategoryDto>> GetSubcategoriesAsync(int? categoryId = null)
     {
-        var query = _dbContext.ContactSubcategories
-            .AsNoTracking()
-            .AsQueryable();
-
-        if (categoryId.HasValue)
+        var subcategories = await _repository.GetSubcategoriesAsync(categoryId);
+        return subcategories.Select(s => new SubcategoryDto
         {
-            query = query.Where(subcategory => subcategory.CategoryId == categoryId.Value);
-        }
-
-        return await query
-            .OrderBy(subcategory => subcategory.Name)
-            .Select(subcategory => new SubcategoryDto
-            {
-                Id = subcategory.Id,
-                CategoryId = subcategory.CategoryId,
-                Name = subcategory.Name
-            })
-            .ToListAsync();
+            Id = s.Id,
+            CategoryId = s.CategoryId,
+            Name = s.Name
+        }).ToList();
     }
 
-    public async Task<ContactDto> CreateAsync(ContactUpsertDto dto)
+    public async Task<ContactDto> CreateAsync(CreateContactDto dto)
     {
-        var contact = await CreateEntityAsync(dto);
+        var contact = new Contact { Id = Guid.NewGuid() };
+        await ToEntity(contact, dto);
 
-        _dbContext.Contacts.Add(contact);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(contact);
 
         return (await GetByIdAsync(contact.Id))
             ?? throw new InvalidOperationException("Created contact could not be loaded.");
     }
 
-    public async Task<ContactDto?> UpdateAsync(Guid id, ContactUpsertDto dto)
+    public async Task<ContactDto?> UpdateAsync(Guid id, CreateContactDto dto)
     {
-        var contact = await _dbContext.Contacts.FirstOrDefaultAsync(contact => contact.Id == id);
+        var contact = await _repository.GetByIdAsync(id);
         if (contact is null)
-        {
             return null;
-        }
 
-        await ApplyFieldsAsync(contact, dto);
+        await ToEntity(contact, dto);
+        await _repository.SaveChangesAsync();
 
-        await _dbContext.SaveChangesAsync();
         return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var contact = await _dbContext.Contacts.FirstOrDefaultAsync(contact => contact.Id == id);
+        var contact = await _repository.GetByIdAsync(id);
         if (contact is null)
-        {
             return false;
-        }
 
-        _dbContext.Contacts.Remove(contact);
-        await _dbContext.SaveChangesAsync();
+        await _repository.RemoveAsync(contact);
         return true;
     }
 
-    private async Task<Contact> CreateEntityAsync(ContactUpsertDto dto)
+    public async Task<string?> GetPasswordAsync(Guid id)
     {
-        var contact = new Contact { Id = Guid.NewGuid() };
-        await ApplyFieldsAsync(contact, dto);
-        return contact;
+        var contact = await _repository.GetByIdAsync(id);
+        if (contact is null)
+            return null;
+
+        return _encryption.Decrypt(contact.EncryptedPassword);
     }
 
-    private async Task ApplyFieldsAsync(Contact contact, ContactUpsertDto dto)
+    private async Task ToEntity(Contact contact, CreateContactDto dto)
     {
         var categoryId = dto.CategoryId ?? throw new ArgumentException("CategoryId is required.");
         var dateOfBirth = dto.DateOfBirth ?? throw new ArgumentException("DateOfBirth is required.");
 
-        var categoryExists = await _dbContext.ContactCategories.AnyAsync(category => category.Id == categoryId);
-        if (!categoryExists)
-        {
-            throw new ArgumentException($"Category with id {categoryId} was not found.");
-        }
+        // Check if contact exists
+        if (await _repository.EmailExistsAsync(dto.Email, contact.Id))
+            throw new ArgumentException("A contact with this email already exists.");
 
-        if (dto.SubcategoryId.HasValue)
-        {
-            var subcategoryMatchesCategory = await _dbContext.ContactSubcategories
-                .AnyAsync(subcategory => subcategory.Id == dto.SubcategoryId.Value && subcategory.CategoryId == categoryId);
+        // Check if category exists
+        var category = await _repository.GetCategoryByIdAsync(categoryId)
+            ?? throw new ArgumentException($"Category with id {categoryId} was not found.");
 
-            if (!subcategoryMatchesCategory)
+        // If subcategory is required for the category, check if it is passed
+        if (category.Name == "Business" && !dto.SubcategoryId.HasValue)
+            throw new ArgumentException("Subcategory is required for Business contacts.");
+
+        int? subcategoryId = dto.SubcategoryId;
+
+        // If category is Custom and custom subcategory is provided, check if it exists or create it
+        if (category.Name == "Custom" && !string.IsNullOrWhiteSpace(dto.CustomSubcategory))
+        {
+            var existing = await _repository.GetSubcategoryByNameAsync(dto.CustomSubcategory.Trim(), categoryId);
+
+            if (existing is not null)
             {
-                throw new ArgumentException($"Subcategory with id {dto.SubcategoryId.Value} was not found for category {categoryId}.");
+                subcategoryId = existing.Id;
+            }
+            else
+            {
+                var newSub = new Subcategory
+                {
+                    Name = dto.CustomSubcategory.Trim(),
+                    CategoryId = categoryId
+                };
+                await _repository.AddSubcategoryAsync(newSub);
+                subcategoryId = newSub.Id;
             }
         }
 
+        // If subcategory is provided, check if it exists and belongs to the category
+        if (subcategoryId.HasValue)
+        {
+            var sub = await _repository.GetSubcategoryAsync(subcategoryId.Value, categoryId);
+            if (sub is null)
+                throw new ArgumentException($"Subcategory with id {subcategoryId.Value} was not found for category {categoryId}.");
+        }
+
+        // Validate password
+        PasswordValidator.ValidatePasswordComplexity(dto.Password);
+
+        // Map fields
         contact.FirstName = dto.FirstName;
         contact.LastName = dto.LastName;
         contact.Email = dto.Email;
+        contact.EncryptedPassword = _encryption.Encrypt(dto.Password);
         contact.PhoneNumber = dto.PhoneNumber;
-        contact.DateOfBirth = dateOfBirth;
+        contact.DateOfBirth = DateTime.SpecifyKind(dateOfBirth, DateTimeKind.Utc);
         contact.CategoryId = categoryId;
-        contact.SubcategoryId = dto.SubcategoryId;
+        contact.SubcategoryId = subcategoryId;
     }
-
-    private static ContactDto Map(Contact contact)
+    
+    private static ContactDto ToDto(Contact contact)
     {
         return new ContactDto
         {
@@ -167,4 +173,3 @@ public class ContactService : IContactService
         };
     }
 }
-

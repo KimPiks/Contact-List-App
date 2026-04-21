@@ -43,7 +43,7 @@ public class ContactsController : ControllerBase
 
     [Authorize]
     [HttpPost]
-    public async Task<ActionResult<ContactDto>> Create([FromBody] ContactUpsertDto dto)
+    public async Task<ActionResult<ContactDto>> Create([FromBody] CreateContactDto dto)
     {
         try
         {
@@ -58,7 +58,7 @@ public class ContactsController : ControllerBase
 
     [Authorize]
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ContactDto>> Update(Guid id, [FromBody] ContactUpsertDto dto)
+    public async Task<ActionResult<ContactDto>> Update(Guid id, [FromBody] CreateContactDto dto)
     {
         try
         {
@@ -77,5 +77,13 @@ public class ContactsController : ControllerBase
     {
         var deleted = await _contactService.DeleteAsync(id);
         return deleted ? NoContent() : NotFound();
+    }
+
+    [Authorize]
+    [HttpGet("{id:guid}/password")]
+    public async Task<IActionResult> GetPassword(Guid id)
+    {
+        var password = await _contactService.GetPasswordAsync(id);
+        return password is null ? NotFound() : Ok(new { password });
     }
 }

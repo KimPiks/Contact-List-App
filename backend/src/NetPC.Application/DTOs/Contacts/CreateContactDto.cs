@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NetPC.Application.DTOs.Contacts;
 
-public class ContactUpsertDto
+public class CreateContactDto
 {
     [Required]
     public string FirstName { get; set; } = string.Empty;
@@ -15,6 +15,9 @@ public class ContactUpsertDto
     public string Email { get; set; } = string.Empty;
 
     [Required]
+    public string Password { get; set; } = string.Empty;
+
+    [Required]
     public string PhoneNumber { get; set; } = string.Empty;
 
     [Required]
@@ -24,4 +27,6 @@ public class ContactUpsertDto
     public int? CategoryId { get; set; }
 
     public int? SubcategoryId { get; set; }
+
+    public string? CustomSubcategory { get; set; }
 }

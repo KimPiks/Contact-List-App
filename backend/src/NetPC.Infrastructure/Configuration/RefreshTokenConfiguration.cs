@@ -8,11 +8,13 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {
     public void Configure(EntityTypeBuilder<RefreshToken> builder)
     {
+        // Define primary key and properties
         builder.HasKey(rt => rt.Id);
         builder.Property(rt => rt.Token).IsRequired();
         builder.Property(rt => rt.ExpiresAt).IsRequired();
         builder.Property(rt => rt.CreatedAt).IsRequired();
         
+        // Define relationships between tables
         builder.HasOne(rt => rt.User)
             .WithMany()
             .HasForeignKey(rt => rt.UserId)

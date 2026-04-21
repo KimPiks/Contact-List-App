@@ -1,5 +1,8 @@
 namespace NetPC.Application.DTOs.Auth;
 
+/// <summary>
+/// Represents the result of an authentication attempt
+/// </summary>
 public class AuthResult
 {
     public bool Success { get; init; }

@@ -9,6 +9,9 @@ using NetPC.Domain.Users;
 
 namespace NetPC.Infrastructure.Auth;
 
+/// <summary>
+/// Service for generating JWT access tokens and refresh tokens for user authentication.
+/// </summary>
 public class JwtService : IJwtService
 {
     private readonly JwtSettings _config;

@@ -39,7 +39,7 @@ namespace NetPC.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -74,7 +74,7 @@ namespace NetPC.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CategoryId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -93,10 +93,11 @@ namespace NetPC.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FirstName = table.Column<string>(type: "text", nullable: false),
-                    LastName = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    EncryptedPassword = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     DateOfBirth = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CategoryId = table.Column<int>(type: "integer", nullable: false),
                     SubcategoryId = table.Column<int>(type: "integer", nullable: true)
@@ -149,12 +150,6 @@ namespace NetPC.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ContactCategories_Name",
-                table: "ContactCategories",
-                column: "Name",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Contacts_CategoryId",
                 table: "Contacts",
                 column: "CategoryId");
@@ -165,10 +160,9 @@ namespace NetPC.Infrastructure.Migrations
                 column: "SubcategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ContactSubcategories_CategoryId_Name",
+                name: "IX_ContactSubcategories_CategoryId",
                 table: "ContactSubcategories",
-                columns: new[] { "CategoryId", "Name" },
-                unique: true);
+                column: "CategoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_UserId",

@@ -6,11 +6,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NetPC.Application.Auth;
 using NetPC.Application.Contacts;
-using NetPC.Domain.Contact;
+using NetPC.Application.Encryption;
 using NetPC.Domain.Users;
 using NetPC.Infrastructure;
 using NetPC.Infrastructure.Auth;
 using NetPC.Infrastructure.Contacts;
+using NetPC.Infrastructure.Encryption;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,12 +21,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddControllers();
 
+// Map JWT settings to object
 builder.Services
     .AddOptions<JwtSettings>()
     .Bind(builder.Configuration.GetSection(JwtSettings.SectionName));
 
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 
+// Database context
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -40,6 +43,7 @@ builder.Services.AddIdentityCore<User>(opt =>
     })
     .AddEntityFrameworkStores<AppDbContext>();
 
+// JWT settings
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()!;
 
 builder.Services
@@ -50,6 +54,7 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -64,13 +69,19 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddSingleton<IEncryptionService>(sp =>
+    new EncryptionService(sp.GetRequiredService<IConfiguration>()["Encryption:Key"]
+        ?? throw new InvalidOperationException("Encryption:Key is not configured.")));
+
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IContactService, ContactService>();
 
 var app = builder.Build();
 
-// Reverse proxy configuration (nginx in Docker network)
+// Reverse proxy configuration
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto

@@ -3,7 +3,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NetPC.Application.Auth;
-using NetPC.Application.DTOs;
 using NetPC.Application.DTOs.Auth;
 
 namespace NetPC.Api.Controllers;
@@ -39,6 +38,16 @@ public class AuthController : ControllerBase
 		return Ok(result);
 	}
 
+	[HttpPost("refresh")]
+	public async Task<ActionResult<AuthResult>> Refresh([FromBody] RefreshDto dto)
+	{
+		var result = await _authService.RefreshAsync(dto.RefreshToken);
+		if (!result.Success)
+			return Unauthorized(result);
+
+		return Ok(result);
+	}
+
 	[Authorize]
 	[HttpPost("logout")]
 	public async Task<IActionResult> Logout([FromBody] LogoutDto dto)
@@ -46,8 +55,7 @@ public class AuthController : ControllerBase
 		if (string.IsNullOrWhiteSpace(dto.RefreshToken))
 			return BadRequest("Refresh token is required.");
 
-		var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
-						  ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+		var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 		if (!Guid.TryParse(userIdValue, out var userId))
 			return Unauthorized();

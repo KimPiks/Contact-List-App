@@ -8,7 +8,8 @@ public interface IContactService
     Task<ContactDto?> GetByIdAsync(Guid id);
     Task<IReadOnlyCollection<CategoryDto>> GetCategoriesAsync();
     Task<IReadOnlyCollection<SubcategoryDto>> GetSubcategoriesAsync(int? categoryId = null);
-    Task<ContactDto> CreateAsync(ContactUpsertDto dto);
-    Task<ContactDto?> UpdateAsync(Guid id, ContactUpsertDto dto);
+    Task<ContactDto> CreateAsync(CreateContactDto dto);
+    Task<ContactDto?> UpdateAsync(Guid id, CreateContactDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task<string?> GetPasswordAsync(Guid id);
 }
