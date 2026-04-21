@@ -11,6 +11,7 @@ export default function ContactsPage({ loggedIn, onLogout, onLoginClick }) {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
+  const [selectedId, setSelectedId] = useState(null)
 
   // Fetch contacts from API.
   const fetchContacts = useCallback(async () => {
@@ -43,6 +44,7 @@ export default function ContactsPage({ loggedIn, onLogout, onLoginClick }) {
     try {
       await fetchWithAuth(`${API_BASE}/Contacts/${id}`, { method: 'DELETE' })
       await fetchContacts()
+      setSelectedId((prev) => (prev === id ? null : prev))
     } catch { }
     setDeleting(null)
   }
@@ -119,7 +121,9 @@ export default function ContactsPage({ loggedIn, onLogout, onLoginClick }) {
               loggedIn={loggedIn}
               editing={editing}
               deleting={deleting}
+              selected={selectedId === c.id}
               categoryName={categoryName}
+              onSelect={setSelectedId}
               onEdit={setEditing}
               onDelete={handleDelete}
             />
