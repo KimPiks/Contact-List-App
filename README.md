@@ -17,6 +17,9 @@ The recommended way to run the app is using Docker.
    cd Contact-List-App
 3. Copy the .env.example file to .env and update the environment variables as needed:
    cp .env.example .env
+
+   **Important:** It is required to fill in the secrets (e.g., `JWT_SECRET_KEY`, `CONTACT_ENCRYPTION_KEY`) in the `.env` file. For `JWT_ISSUER` and `JWT_AUDIENCE`, you can simply use `localhost`.
+
 4. Build and run the Docker containers:
    docker-compose up --build
 ```
