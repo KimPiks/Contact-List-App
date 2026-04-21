@@ -3,7 +3,7 @@ using NetPC.Application.Auth;
 using NetPC.Application.DTOs.Auth;
 using NetPC.Domain.Users;
 
-namespace NetPC.Infrastructure.Auth;
+namespace NetPC.Application.Auth;
 
 /// <summary>
 /// Service responsible for handling user authentication, including registration, login, and logout.

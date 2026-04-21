@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace NetPC.Infrastructure.Contacts;
+namespace NetPC.Application.Contacts;
 
 public static class PasswordValidator
 {

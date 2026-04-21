@@ -3,7 +3,7 @@ using NetPC.Application.DTOs.Contacts;
 using NetPC.Application.Encryption;
 using NetPC.Domain.Contact;
 
-namespace NetPC.Infrastructure.Contacts;
+namespace NetPC.Application.Contacts;
 
 /// <summary>
 /// Service for managing contacts, including CRUD operations and password handling.
