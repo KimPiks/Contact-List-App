@@ -21,7 +21,7 @@ The recommended way to run the app is using Docker.
    docker-compose up --build
 ```
 
-All database migrations will be run automatically when the containers start. The app will be accessible at `http://localhost:3000`.
+All database migrations will be run automatically when the containers start. The app will be accessible at `http://localhost:8080`.
 
 ## Docker Compose
 The application ecosystem is fully containerized and orchestrated via Docker Compose (`compose.yaml`). The setup includes the following services:
@@ -64,7 +64,7 @@ Handles data persistence, external communication, and framework-specific concern
 - **`AppDbContext`**: The Entity Framework Core context configuring database schemas, seed data (for Categories/Subcategories), and foreign key constraints.
 - **Repositories (`AuthRepository`, `ContactRepository`)**: Concrete implementations of application interfaces.
 - **`EncryptionService`**: Implements symmetric AES encryption and decryption logic specifically for contact passwords.
-- **`JwtService`**: Handles the generation of JWT access tokens and long-lived refresh tokens using `Microsoft.IdentityModel.Tokens`.
+- **`JwtService`**: Handles the generation of JWT access tokens and long-lived refresh tokens.
 
 ### API Layer
 The entry point of the backend application (`NetPC.Api`). It includes:
